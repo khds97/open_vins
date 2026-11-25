@@ -21,6 +21,8 @@
 
 #include "ROS2Visualizer.h"
 
+#include <opencv2/imgcodecs.hpp>
+
 #include "core/VioManager.h"
 #include "ros/ROSVisualizerHelper.h"
 #include "sim/Simulator.h"
@@ -210,8 +212,12 @@ void ROS2Visualizer::setup_subscribers(std::shared_ptr<ov_core::YamlParser> pars
       // create subscriber
       // auto sub = _node->create_subscription<sensor_msgs::msg::Image>(
       //    cam_topic, rclcpp::SensorDataQoS(), std::bind(&ROS2Visualizer::callback_monocular, this, std::placeholders::_1, i));
-      auto sub = _node->create_subscription<sensor_msgs::msg::Image>(
-          cam_topic, 10, [this, i](const sensor_msgs::msg::Image::SharedPtr msg0) { callback_monocular(msg0, i); });
+	auto sub = _node->create_subscription<sensor_msgs::msg::CompressedImage>(
+	    cam_topic,
+	    rclcpp::QoS(rclcpp::KeepLast(10)).reliable(),
+	    [this, i](const sensor_msgs::msg::CompressedImage::SharedPtr msg0) {
+		callback_monocular(msg0, i);
+	    });
       subs_cam.push_back(sub);
       PRINT_INFO("subscribing to cam (mono): %s\n", cam_topic.c_str());
     }
@@ -495,45 +501,70 @@ void ROS2Visualizer::callback_inertial(const sensor_msgs::msg::Imu::SharedPtr ms
   }
 }
 
-void ROS2Visualizer::callback_monocular(const sensor_msgs::msg::Image::SharedPtr msg0, int cam_id0) {
+void ROS2Visualizer::callback_monocular(
+    const sensor_msgs::msg::CompressedImage::SharedPtr msg0,
+    int cam_id0) {
 
   // Check if we should drop this image
-  double timestamp = msg0->header.stamp.sec + msg0->header.stamp.nanosec * 1e-9;
+  double timestamp =
+      msg0->header.stamp.sec +
+      msg0->header.stamp.nanosec * 1e-9;
+
   double time_delta = 1.0 / _app->get_params().track_frequency;
-  if (camera_last_timestamp.find(cam_id0) != camera_last_timestamp.end() && timestamp < camera_last_timestamp.at(cam_id0) + time_delta) {
+
+  if (camera_last_timestamp.find(cam_id0) != camera_last_timestamp.end() &&
+      timestamp < camera_last_timestamp.at(cam_id0) + time_delta) {
     return;
   }
+
   camera_last_timestamp[cam_id0] = timestamp;
 
-  // Get the image
-  cv_bridge::CvImageConstPtr cv_ptr;
+  // Decode compressed image
+  cv::Mat image;
+
   try {
-    cv_ptr = cv_bridge::toCvShare(msg0, sensor_msgs::image_encodings::MONO8);
-  } catch (cv_bridge::Exception &e) {
-    PRINT_ERROR("cv_bridge exception: %s", e.what());
+    image = cv::imdecode(
+        msg0->data,
+        cv::IMREAD_GRAYSCALE
+    );
+  } catch (const cv::Exception &e) {
+    PRINT_ERROR("OpenCV decode exception: %s", e.what());
+    return;
+  }
+
+  if (image.empty()) {
+    PRINT_ERROR("Failed to decode compressed image");
     return;
   }
 
   // Create the measurement
   ov_core::CameraData message;
-  message.timestamp = cv_ptr->header.stamp.sec + cv_ptr->header.stamp.nanosec * 1e-9;
+
+  message.timestamp = timestamp;
   message.sensor_ids.push_back(cam_id0);
-  message.images.push_back(cv_ptr->image.clone());
+  message.images.push_back(image.clone());
 
   // Load the mask if we are using it, else it is empty
-  // TODO: in the future we should get this from external pixel segmentation
   if (_app->get_params().use_mask) {
-    message.masks.push_back(_app->get_params().masks.at(cam_id0));
+    message.masks.push_back(
+        _app->get_params().masks.at(cam_id0)
+    );
   } else {
-    message.masks.push_back(cv::Mat::zeros(cv_ptr->image.rows, cv_ptr->image.cols, CV_8UC1));
+    message.masks.push_back(
+        cv::Mat::zeros(
+            image.rows,
+            image.cols,
+            CV_8UC1
+        )
+    );
   }
 
-  // append it to our queue of images
+  // Append it to our queue of images
   std::lock_guard<std::mutex> lck(camera_queue_mtx);
+
   camera_queue.push_back(message);
   std::sort(camera_queue.begin(), camera_queue.end());
 }
-
 void ROS2Visualizer::callback_stereo(const sensor_msgs::msg::Image::ConstSharedPtr msg0, const sensor_msgs::msg::Image::ConstSharedPtr msg1,
                                      int cam_id0, int cam_id1) {
 

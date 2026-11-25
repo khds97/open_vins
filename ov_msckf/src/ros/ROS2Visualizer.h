@@ -34,6 +34,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/camera_info.hpp>
 #include <sensor_msgs/msg/image.hpp>
+#include <sensor_msgs/msg/compressed_image.hpp>
 #include <sensor_msgs/msg/imu.hpp>
 #include <sensor_msgs/msg/nav_sat_fix.hpp>
 #include <sensor_msgs/msg/point_cloud.hpp>
@@ -113,7 +114,8 @@ public:
   void callback_inertial(const sensor_msgs::msg::Imu::SharedPtr msg);
 
   /// Callback for monocular cameras information
-  void callback_monocular(const sensor_msgs::msg::Image::SharedPtr msg0, int cam_id0);
+  //void callback_monocular(const sensor_msgs::msg::Image::SharedPtr msg0, int cam_id0);
+  void callback_monocular(const sensor_msgs::msg::CompressedImage::SharedPtr msg0, int cam_id0);
 
   /// Callback for synchronized stereo camera information
   void callback_stereo(const sensor_msgs::msg::Image::ConstSharedPtr msg0, const sensor_msgs::msg::Image::ConstSharedPtr msg1, int cam_id0,
@@ -157,7 +159,8 @@ protected:
 
   // Our subscribers and camera synchronizers
   rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr sub_imu;
-  std::vector<rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr> subs_cam;
+  //std::vector<rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr> subs_cam;
+  std::vector<rclcpp::Subscription<sensor_msgs::msg::CompressedImage>::SharedPtr> subs_cam;
   typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::msg::Image, sensor_msgs::msg::Image> sync_pol;
   std::vector<std::shared_ptr<message_filters::Synchronizer<sync_pol>>> sync_cam;
   std::vector<std::shared_ptr<message_filters::Subscriber<sensor_msgs::msg::Image>>> sync_subs_cam;
