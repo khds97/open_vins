@@ -17,6 +17,11 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Modifications by khds97:
+ * Copyright (C) 2026 khds97
+ * - Added CompressedImage subscription declarations for monocular input.
+
  */
 
 #ifndef OV_MSCKF_ROS2VISUALIZER_H

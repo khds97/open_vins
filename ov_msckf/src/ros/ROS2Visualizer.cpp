@@ -17,6 +17,12 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Modifications by khds97:
+ * Copyright (C) 2026 khds97
+ * - Added ROS 2 CompressedImage subscription support for monocular input.
+ * - Added internal JPEG decoding using OpenCV.
+
  */
 
 #include "ROS2Visualizer.h"

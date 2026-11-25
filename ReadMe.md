@@ -159,7 +159,33 @@ details on what the system supports.
    <img src="https://raw.githubusercontent.com/rpng/open_vins/master/docs/youtube/lXHl-qgLGl8.jpg" width="120" height="90" />
 </a>
 
+## Fork: ROS 2 Compressed Image Input
 
+This repository is a modified fork of the original [OpenVINS](https://github.com/rpng/open_vins) project.
+
+### Modifications
+
+This fork adds direct ROS 2 `sensor_msgs/msg/CompressedImage` subscription support for monocular camera input.
+
+- Subscribes to ROS 2 CompressedImage messages directly in OpenVINS.
+- Decodes JPEG-compressed image data internally using OpenCV.
+- Removes the need for a separate compressed-to-raw image conversion node.
+- Preserves the existing OpenVINS camera processing and estimation pipeline.
+
+### Modified Files
+
+- `ov_msckf/src/ros/ROS2Visualizer.cpp`
+- `ov_msckf/src/ros/ROS2Visualizer.h`
+
+### Original Project
+
+- Project: [OpenVINS](https://github.com/rpng/open_vins)
+- Authors: Patrick Geneva, Kevin Eckenhoff, Woosik Lee, Yulin Yang, Guoquan Huang
+- Paper: *OpenVINS: A Research Platform for Visual-Inertial Estimation*, IEEE ICRA 2020.
+
+This fork is maintained by [khds97](https://github.com/khds97).
+
+The original copyright notices and GPL-3.0 license terms are preserved.
 
 ## Credit / Licensing
 
@@ -181,5 +207,4 @@ following:
 
 The codebase and documentation is licensed under the [GNU General Public License v3 (GPL-3)](https://www.gnu.org/licenses/gpl-3.0.txt).
 You must preserve the copyright and license notices in your derivative work and make available the complete source code with modifications under the same license ([see this](https://choosealicense.com/licenses/gpl-3.0/); this is not legal advice).
-
 
